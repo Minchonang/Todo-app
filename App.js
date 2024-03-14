@@ -9,13 +9,16 @@ import {
 	TouchableOpacity,
 	View,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./color";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function App() {
-	const [working, setWorking] = useState(true);
 	const [text, setText] = useState("");
+	const [working, setWorking] = useState(true);
 	const [toDos, setToDos] = useState({}); // object
+
+	const STORAGE_KEY = "@toDos";
 
 	const travel = () => {
 		setWorking(false);
@@ -27,7 +30,7 @@ export default function App() {
 	const onChangeText = (e) => {
 		setText(e);
 	};
-	const addTodo = () => {
+	const addTodo = async () => {
 		if (text === "") {
 			return;
 		}
@@ -39,9 +42,28 @@ export default function App() {
 		// 	[Date.now()]: { text, work: working },
 		// });
 		setToDos(newToDos);
+		await saveTodos(newToDos);
 		setText("");
 	};
-	console.log(toDos);
+
+	const saveTodos = async (toSave) => {
+		const s = JSON.stringify(toSave);
+		await AsyncStorage.setItem(STORAGE_KEY, s);
+	};
+
+	const loadTodos = async () => {
+		try {
+			const s = await AsyncStorage.getItem(STORAGE_KEY);
+			JSON.parse(s);
+			setToDos(JSON.parse(s));
+		} catch (e) {
+			console.log(`error: ${e}`);
+		}
+	};
+
+	useEffect(() => {
+		loadTodos();
+	}, []);
 
 	return (
 		<View style={styles.container}>
@@ -69,7 +91,7 @@ export default function App() {
 					returnKeyType="done"
 					value={text}
 					style={styles.input}
-					placeholder={working ? "Add a Todo" : "Where do you want to go?"}
+					placeholder={working ? "Todo 추가하기" : "여행을 떠나볼까요?"}
 				/>
 			</View>
 			<ScrollView style={styles.toDoList}>
