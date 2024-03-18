@@ -1,73 +1,116 @@
 import { StatusBar } from "expo-status-bar";
 import {
-	FlatList,
+	Alert,
 	ScrollView,
 	StyleSheet,
 	Text,
 	TextInput,
-	TouchableHighlight,
 	TouchableOpacity,
 	View,
 } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { theme } from "./color";
 import { useEffect, useState } from "react";
+import { AntDesign } from "@expo/vector-icons";
 
 export default function App() {
 	const [text, setText] = useState("");
 	const [working, setWorking] = useState(true);
-	const [toDos, setToDos] = useState({}); // object
+	const [toDos, setToDos] = useState({});
 
+	const STATUS = "@working";
 	const STORAGE_KEY = "@toDos";
 
-	const travel = () => {
-		setWorking(false);
+	useEffect(() => {
+		loadTodos();
+		callWorking();
+	}, []);
+
+	
+
+	useEffect(() => {
+		AsyncStorage.setItem(STATUS, JSON.stringify(working));
+	}, [working]);
+
+	const callWorking = async () => {
+		try {
+			const now = await AsyncStorage.getItem(STATUS);
+			JSON.parse(now);
+			setWorking(now);
+		} catch (e) {
+			console.error(e);
+		}
 	};
-	const work = () => {
+
+	const work = async () => {
 		setWorking(true);
 	};
 
-	const onChangeText = (e) => {
-		setText(e);
+	const travel = async () => {
+		setWorking(false);
 	};
+
+	const onChangeText = (text) => {
+		setText(text);
+	};
+
 	const addTodo = async () => {
 		if (text === "") {
 			return;
 		}
 		const newToDos = {
 			...toDos,
-			[Date.now()]: { text, working },
+			[Date.now()]: { text, working, checked:false },
 		};
-		// const newToDos = Object.assign({}, toDos, {
-		// 	[Date.now()]: { text, work: working },
-		// });
 		setToDos(newToDos);
-		await saveTodos(newToDos);
+		await saveToDos(newToDos);
 		setText("");
 	};
 
-	const saveTodos = async (toSave) => {
-		const s = JSON.stringify(toSave);
+	const completedToDo = (key) => {
+		const newToDos = { ...toDos };
+		newToDos[key].checked = !newToDos[key].checked;
+		setToDos(newToDos);
+		saveToDos(newToDos);
+	};
+
+	const saveToDos = async (toSave) => {
+		const s = JSON.stringify(toSave); // AsyncStorage에 저장하기 위해 string으로 저장.
 		await AsyncStorage.setItem(STORAGE_KEY, s);
 	};
 
 	const loadTodos = async () => {
 		try {
+			// AsyncStorage는 string으로만 저장되므로 다시 JSON으로 변환 작업 필요.
 			const s = await AsyncStorage.getItem(STORAGE_KEY);
-			JSON.parse(s);
-			setToDos(JSON.parse(s));
+			if (s) {
+				JSON.parse(s); 
+				setToDos(JSON.parse(s));
+			}
 		} catch (e) {
 			console.log(`error: ${e}`);
 		}
 	};
 
-	useEffect(() => {
-		loadTodos();
-	}, []);
+	const deleteTodo = (key) => {
+		Alert.alert("삭제", "삭제하시겠습니까?", [
+			{ text: "취소" },
+			{
+				text: "삭제",
+				style: "destructive",
+				onPress: () => {
+					const newToDos = { ...toDos };
+					delete newToDos[key];
+					setToDos(newToDos);
+					saveToDos(newToDos);
+				},
+			},
+		]);
+	};
 
 	return (
 		<View style={styles.container}>
-			<StatusBar style="auto" />
+			<StatusBar style="light" />
 			<View style={styles.header}>
 				<TouchableOpacity onPress={work}>
 					<Text
@@ -91,14 +134,24 @@ export default function App() {
 					returnKeyType="done"
 					value={text}
 					style={styles.input}
-					placeholder={working ? "Todo 추가하기" : "여행을 떠나볼까요?"}
+					placeholder={working ? "할 일 추가하기" : "여행을 떠나볼까요?"}
 				/>
 			</View>
 			<ScrollView style={styles.toDoList}>
 				{Object.keys(toDos).map((key) =>
 					toDos[key].working === working ? (
 						<View style={styles.toDo} key={key}>
-							<Text style={styles.toDoText}>{toDos[key].text}</Text>
+							<Text style={toDos[key].checked ? styles.completeToDoText : styles.toDoText}>
+								{toDos[key].text}
+							</Text>
+							<View style={styles.btnArea}>
+								<TouchableOpacity onPress={() => completedToDo(key)}>
+									<AntDesign name="check" size={20} color="lime" />
+								</TouchableOpacity>
+								<TouchableOpacity onPress={() => deleteTodo(key)}>
+									<AntDesign name="delete" size={20} color="black" />
+								</TouchableOpacity>
+							</View>
 						</View>
 					) : null
 				)}
@@ -136,6 +189,9 @@ const styles = StyleSheet.create({
 		marginTop: 30,
 	},
 	toDo: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		marginBottom: 10,
 		paddingVertical: 15,
 		paddingHorizontal: 20,
@@ -144,7 +200,25 @@ const styles = StyleSheet.create({
 	},
 	toDoText: {
 		color: "white",
-		fontSize: 16,
+		fontSize: 20,
 		fontWeight: "500",
+	},
+	completeToDoText: {
+		color: "lightgray",
+		fontSize: 20,
+		fontWeight: "500",
+		textDecorationLine: "line-through",
+	},
+	btnArea: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		width: 45,
+	},
+	check: {
+		paddingRight: 50,
+	},
+	delete: {
+		fontSize: 25,
+		marginLeft: 30,
 	},
 });
