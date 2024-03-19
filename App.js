@@ -26,8 +26,6 @@ export default function App() {
 		callWorking();
 	}, []);
 
-	
-
 	useEffect(() => {
 		AsyncStorage.setItem(STATUS, JSON.stringify(working));
 	}, [working]);
@@ -60,7 +58,7 @@ export default function App() {
 		}
 		const newToDos = {
 			...toDos,
-			[Date.now()]: { text, working, checked:false },
+			[Date.now()]: { text, working, checked: false, edit: false },
 		};
 		setToDos(newToDos);
 		await saveToDos(newToDos);
@@ -74,6 +72,11 @@ export default function App() {
 		saveToDos(newToDos);
 	};
 
+	const editTodo = (key) => {
+		const newToDos = { ...toDos };
+		newToDos[key].edit = !newToDos[key].edit;
+	};
+
 	const saveToDos = async (toSave) => {
 		const s = JSON.stringify(toSave); // AsyncStorage에 저장하기 위해 string으로 저장.
 		await AsyncStorage.setItem(STORAGE_KEY, s);
@@ -84,7 +87,7 @@ export default function App() {
 			// AsyncStorage는 string으로만 저장되므로 다시 JSON으로 변환 작업 필요.
 			const s = await AsyncStorage.getItem(STORAGE_KEY);
 			if (s) {
-				JSON.parse(s); 
+				JSON.parse(s);
 				setToDos(JSON.parse(s));
 			}
 		} catch (e) {
@@ -141,10 +144,35 @@ export default function App() {
 				{Object.keys(toDos).map((key) =>
 					toDos[key].working === working ? (
 						<View style={styles.toDo} key={key}>
-							<Text style={toDos[key].checked ? styles.completeToDoText : styles.toDoText}>
-								{toDos[key].text}
-							</Text>
+							{toDos[key].edit ? (
+								<TextInput
+									onSubmitEditing={toDos[key].text}
+									onChangeText={onChangeText}
+									returnKeyType="done"
+									value={toDos[key].text}
+									style={styles.toDoText}
+								/>
+							) : (
+								<Text
+									style={
+										toDos[key].checked
+											? styles.completeToDoText
+											: styles.toDoText
+									}
+								>
+									{toDos[key].text}
+								</Text>
+							)}
 							<View style={styles.btnArea}>
+								{toDos[key].edit ? (
+									<TouchableOpacity>
+										<AntDesign name="check" size={20} color="lime" />
+									</TouchableOpacity>
+								) : (
+									<TouchableOpacity onPress={() => editTodo(key)}>
+										<AntDesign name="edit" size={20} color="white" />
+									</TouchableOpacity>
+								)}
 								<TouchableOpacity onPress={() => completedToDo(key)}>
 									<AntDesign name="check" size={20} color="lime" />
 								</TouchableOpacity>
