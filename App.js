@@ -22,7 +22,7 @@ export default function App() {
 	const STORAGE_KEY = "@toDos";
 
 	useEffect(() => {
-		loadTodos();
+		loadToDos();
 		callWorking();
 	}, []);
 
@@ -33,8 +33,8 @@ export default function App() {
 	const callWorking = async () => {
 		try {
 			const now = await AsyncStorage.getItem(STATUS);
-			JSON.parse(now);
-			setWorking(now);
+			const booleanNow = Boolean(JSON.parse(now));
+			setWorking(booleanNow);
 		} catch (e) {
 			console.error(e);
 		}
@@ -72,17 +72,35 @@ export default function App() {
 		saveToDos(newToDos);
 	};
 
+	// 수정하기 버튼
 	const editTodo = (key) => {
 		const newToDos = { ...toDos };
-		newToDos[key].edit = !newToDos[key].edit;
+		newToDos[key].edit = true;
+		setToDos(newToDos);
+	};
+
+	// 수정 중
+	const onEditText = (key, text) => {
+		const newToDos = { ...toDos };
+		newToDos[key].text = text;
+		setToDos(newToDos);
+	};
+
+	// 수정 완료
+	const editText = (key) => {
+		const newToDos = { ...toDos };
+		newToDos[key].edit = false;
+		setToDos(newToDos);
+		saveToDos(newToDos);
 	};
 
 	const saveToDos = async (toSave) => {
-		const s = JSON.stringify(toSave); // AsyncStorage에 저장하기 위해 string으로 저장.
+		// AsyncStorage에 JSON으로 저장하기 위해 string으로 저장.
+		const s = JSON.stringify(toSave);
 		await AsyncStorage.setItem(STORAGE_KEY, s);
 	};
 
-	const loadTodos = async () => {
+	const loadToDos = async () => {
 		try {
 			// AsyncStorage는 string으로만 저장되므로 다시 JSON으로 변환 작업 필요.
 			const s = await AsyncStorage.getItem(STORAGE_KEY);
@@ -146,10 +164,12 @@ export default function App() {
 						<View style={styles.toDo} key={key}>
 							{toDos[key].edit ? (
 								<TextInput
-									onSubmitEditing={toDos[key].text}
-									onChangeText={onChangeText}
-									returnKeyType="done"
+									key={key}
+									onSubmitEditing={() => editText(key)}
+									onChangeText={(text) => onEditText(key, text)}
 									value={toDos[key].text}
+									returnKeyType="done"
+									placeholder="수정하기"
 									style={styles.toDoText}
 								/>
 							) : (
@@ -165,17 +185,21 @@ export default function App() {
 							)}
 							<View style={styles.btnArea}>
 								{toDos[key].edit ? (
+									// 수정 완료
 									<TouchableOpacity>
-										<AntDesign name="check" size={20} color="lime" />
+										<AntDesign name="edit" size={20} color="blue" />
 									</TouchableOpacity>
 								) : (
+									// 수정
 									<TouchableOpacity onPress={() => editTodo(key)}>
 										<AntDesign name="edit" size={20} color="white" />
 									</TouchableOpacity>
 								)}
+								{/* 완료 */}
 								<TouchableOpacity onPress={() => completedToDo(key)}>
 									<AntDesign name="check" size={20} color="lime" />
 								</TouchableOpacity>
+								{/* 삭제 */}
 								<TouchableOpacity onPress={() => deleteTodo(key)}>
 									<AntDesign name="delete" size={20} color="black" />
 								</TouchableOpacity>
@@ -237,9 +261,10 @@ const styles = StyleSheet.create({
 		fontWeight: "500",
 		textDecorationLine: "line-through",
 	},
+
 	btnArea: {
 		flexDirection: "row",
-		justifyContent: "space-between",
+		// justifyContent: "space-between",
 		width: 45,
 	},
 	check: {
