@@ -1,6 +1,7 @@
 import { StatusBar } from "expo-status-bar";
 import {
 	Alert,
+	Platform,
 	ScrollView,
 	StyleSheet,
 	Text,
@@ -114,19 +115,29 @@ export default function App() {
 	};
 
 	const deleteTodo = (key) => {
-		Alert.alert("삭제", "삭제하시겠습니까?", [
-			{ text: "취소" },
-			{
-				text: "삭제",
-				style: "destructive",
-				onPress: () => {
-					const newToDos = { ...toDos };
-					delete newToDos[key];
-					setToDos(newToDos);
-					saveToDos(newToDos);
+		if (Platform.OS === " web ") {
+			const ok = confirm("삭제하시겠습니까?");
+			if (ok) {
+				const newToDos = { ...toDos };
+				delete newToDos[key];
+				setToDos(newToDos);
+				saveToDos(newToDos);
+			}
+		} else {
+			Alert.alert("삭제", "삭제하시겠습니까?", [
+				{ text: "취소" },
+				{
+					text: "삭제",
+					style: "destructive",
+					onPress: () => {
+						const newToDos = { ...toDos };
+						delete newToDos[key];
+						setToDos(newToDos);
+						saveToDos(newToDos);
+					},
 				},
-			},
-		]);
+			]);
+		}
 	};
 
 	return (
@@ -135,14 +146,22 @@ export default function App() {
 			<View style={styles.header}>
 				<TouchableOpacity onPress={work}>
 					<Text
-						style={{ ...styles.btnText, color: working ? "white" : theme.gray }}
+						style={{
+							fontSize: theme.headerFontSize,
+							fontWeight: theme.headerFontWeight,
+							color: working ? "white" : theme.gray,
+						}}
 					>
 						일하고
 					</Text>
 				</TouchableOpacity>
 				<TouchableOpacity onPress={travel}>
 					<Text
-						style={{ ...styles.btnText, color: working ? theme.gray : "white" }}
+						style={{
+							fontSize: theme.headerFontSize,
+							fontWeight: theme.headerFontWeight,
+							color: working ? theme.gray : "white",
+						}}
 					>
 						여행하고
 					</Text>
@@ -223,10 +242,7 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		marginTop: 100,
 	},
-	btnText: {
-		fontSize: 35,
-		fontWeight: "600",
-	},
+
 	input: {
 		backgroundColor: "white",
 		marginVertical: 10,
