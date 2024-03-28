@@ -252,13 +252,13 @@ const styles = StyleSheet.create({
 	},
 	toDoText: {
 		color: "white",
-		fontSize: 20,
-		fontWeight: "500",
+		fontSize: theme.toDoTextFontSize,
+		fontWeight: theme.toDoTextFontWeight,
 	},
 	completeToDoText: {
 		color: "lightgray",
-		fontSize: 20,
-		fontWeight: "500",
+		fontSize: theme.toDoTextFontSize,
+		fontWeight: theme.toDoTextFontWeight,
 		textDecorationLine: "line-through",
 	},
 
